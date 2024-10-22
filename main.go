@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2024 Jake
+Copyright (c) 2024 Jake Lilly
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -94,9 +94,15 @@ func main() {
 			os.Exit(EXIT_ERROR)
 		}
 	case "expel":
-		Expel(packages, opts)
+		if err := Expel(packages, opts); err != nil {
+			fmt.Fprintf(os.Stderr, "Expel command failed with error: %s\n", err)
+			os.Exit(EXIT_ERROR)
+		}
 	case "peer":
-		Peer(packages, opts)
+		if err := Peer(packages, opts); err != nil {
+			fmt.Fprintf(os.Stderr, "Peer command failed with error: %s\n", err)
+			os.Exit(EXIT_ERROR)
+		}
 	}
 }
 
@@ -229,7 +235,7 @@ func Conjure(pkgs []Package, opts *Options) error {
 		fmt.Fprintf(os.Stdout, ".:. Conjuring %s\n", pkg.name)
 		for _, fn := range pkg.files {
 			if fn.state == ABSENT || fn.state == MISMATCH {
-				if err := rmFile(fn, opts.Target); err != nil {
+				if err := copyFile(fn, pkg.name, opts.Source, opts.Target); err != nil {
 					return err
 				}
 			}
@@ -243,8 +249,8 @@ func Expel(pkgs []Package, opts *Options) error {
 	for _, pkg := range pkgs {
 		fmt.Fprintf(os.Stdout, ".:. Expelling %s\n", pkg.name)
 		 for _, fn := range pkg.files {
-			if fn.state == PRESENT {
-				if err := copyFile(fn, pkg.name, opts.Source, opts.Target); err != nil {
+			 if fn.state == PRESENT {
+				if err := rmFile(fn, opts.Target); err != nil {
 					return err
 				}
 			}
@@ -255,10 +261,11 @@ func Expel(pkgs []Package, opts *Options) error {
 
 // Peer subcommand
 func Peer(pkgs []Package, opts *Options) error {
+	fmt.Fprintf(os.Stdout, ".:. Peering Packages\n")
 	for _, pkg := range pkgs {
-		fmt.Fprintf(os.Stdout, ".:. Peer %s\n", pkg.name)
+		fmt.Fprintf(os.Stdout, "  %s\n", pkg.name)
 		for _, fn := range pkg.files {
-			fmt.Fprintf(os.Stdout, "\t(%s) %s\n", fn.state, fn.path)
+			fmt.Fprintf(os.Stdout, "    (%s) %s\n", fn.state, fn.path)
 		}
 	}
 	return nil
