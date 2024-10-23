@@ -114,7 +114,6 @@ type Options struct {
 
 func (opts *Options) Parse(cmd string, args []string) error {
 	cli := flag.NewFlagSet(cmd, flag.ExitOnError)
-	cli.StringVar(&opts.Source, "source", opts.Source, "Source path for packages")
 	cli.StringVar(&opts.Target, "target", opts.Target, "Target destination for packages")
 	return cli.Parse(args)
 }
