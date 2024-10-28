@@ -52,12 +52,14 @@ func main() {
 		os.Exit(EXIT_ERROR)
 	}
 
-	cmd := os.Args[1]
-	if cmd != "conjure" && cmd != "expel" && cmd != "peer" {
-		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
-		os.Exit(EXIT_ERROR)
+	var commands = map[string]func([]Package, *Options)error{
+		"conjure": Conjure,
+		"expel": Expel,
+		"peer": Peer,
 	}
 
+	cmd := os.Args[1]
+	
 	files, err := os.ReadDir(opts.Source)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading directory %s: %s", opts.Source, err)
@@ -87,22 +89,9 @@ func main() {
 		}
 	}
 
-	switch cmd {
-	case "conjure":
-		if err := Conjure(packages, opts); err != nil {
-			fmt.Fprintf(os.Stderr, "Conjure command failed with error: %s\n", err)
-			os.Exit(EXIT_ERROR)
-		}
-	case "expel":
-		if err := Expel(packages, opts); err != nil {
-			fmt.Fprintf(os.Stderr, "Expel command failed with error: %s\n", err)
-			os.Exit(EXIT_ERROR)
-		}
-	case "peer":
-		if err := Peer(packages, opts); err != nil {
-			fmt.Fprintf(os.Stderr, "Peer command failed with error: %s\n", err)
-			os.Exit(EXIT_ERROR)
-		}
+	if err := runCommand(cmd, commands, packages, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(EXIT_ERROR)
 	}
 }
 
@@ -226,6 +215,14 @@ func rmFile(pkgFile PackageFile, targetPath string) error {
 		return err
 	}
 	return nil
+}
+
+// Command runner
+func runCommand(command string, commands map[string]func([]Package, *Options)error, pkgs []Package, opts *Options) error {
+	if fn, exists := commands[command]; exists {
+		return fn(pkgs, opts)
+	}
+	return fmt.Errorf("Unknown command: %s", command)
 }
 
 // Conjure subcommand
